@@ -1,0 +1,96 @@
+{
+  "award_year": "2026-27",
+  "last_updated": "2026-06-14",
+  "data_sources": [
+    "https://studentaid.gov/articles/dont-miss-out-on-pell-grants/",
+    "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts",
+    "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2025-2026/vol8/ch4-annual-and-aggregate-loan-limits",
+    "https://fsapartners.ed.gov/sites/default/files/2024-08/20252026StudentAidIndexSAIandPellGrantEligibilityGuide.pdf"
+  ],
+  "disclaimer": "These figures are sourced from official Federal Student Aid (studentaid.gov) publications for the 2026-27 award year where available. The SAI calculation below is a SIMPLIFIED APPROXIMATION of the real federal formula, intended for educational demo purposes only. It is NOT an official aid determination. Always file the real FAFSA at studentaid.gov for an authoritative result.",
+
+  "pell_grant": {
+    "maximum_award": 7395,
+    "minimum_award": 740,
+    "sai_eligibility_cutoff": 14790,
+    "sai_auto_max_threshold": 0,
+    "sai_range": {"min": -1500, "max": 999999},
+    "enrollment_proration": {
+      "full_time": 1.0,
+      "three_quarter_time": 0.75,
+      "half_time": 0.5,
+      "less_than_half_time": 0.25
+    },
+    "notes": "SAI <= 0 -> maximum award (subject to enrollment proration). SAI >= 14,790 -> not eligible (OBBBA rule, 2x max award). Between 0 and cutoff, award scales down linearly (simplified approximation of the federal Pell award table)."
+  },
+
+  "auto_zero_pathway": {
+    "description": "Families receiving certain means-tested federal benefits automatically receive SAI = -1500 (max Pell), regardless of computed income.",
+    "qualifying_benefits": ["SNAP", "TANF", "Medicaid", "WIC", "SSI", "Free or Reduced Price School Lunch"]
+  },
+
+  "sai_formula_simplified": {
+    "description": "Simplified approximation of FAFSA Formula A (dependent students) and a single-household version for independent students. Real formula: studentaid.gov SAI Guide.",
+    "student_income_protection_allowance": 11770,
+    "student_income_assessment_rate": 0.50,
+    "student_asset_assessment_rate": 0.20,
+    "parent_employment_expense_allowance": {"rate": 0.35, "max": 5000},
+    "payroll_tax_allowance_rate": 0.0765,
+    "additional_family_member_ipa_increment": 7740,
+    "parent_income_protection_allowance_by_family_size": {
+      "1": 21670,
+      "2": 29400,
+      "3": 37140,
+      "4": 44880,
+      "5": 52620,
+      "6": 60360,
+      "7": 68100,
+      "8": 75840
+    },
+    "available_income_brackets": [
+      {"upper_bound": -8500, "rate": 0.22},
+      {"upper_bound": 0,      "rate": 0.25},
+      {"upper_bound": 14500,  "rate": 0.29},
+      {"upper_bound": 29000,  "rate": 0.34},
+      {"upper_bound": 43900,  "rate": 0.40},
+      {"upper_bound": null,   "rate": 0.47}
+    ],
+    "number_in_college_divides_parent_contribution": true
+  },
+
+  "federal_work_study": {
+    "requires_fafsa_interest_flag": true,
+    "requires_financial_need": true,
+    "min_enrollment": "half_time",
+    "eligible_citizenship": ["us_citizen", "eligible_noncitizen"],
+    "typical_award_range": {"min": 1000, "max": 3500},
+    "notes": "Eligibility approximated as financial_need = COA - SAI > 0. Actual award depends on school's FWS fund availability and is determined by the financial aid office."
+  },
+
+  "subsidized_loans": {
+    "requires_financial_need": true,
+    "dependent": {
+      "year_1": {"total_limit": 5500, "subsidized_max": 3500},
+      "year_2": {"total_limit": 6500, "subsidized_max": 4500},
+      "year_3_plus": {"total_limit": 7500, "subsidized_max": 5500},
+      "aggregate_total_limit": 31000,
+      "aggregate_subsidized_limit": 23000
+    },
+    "independent": {
+      "year_1": {"total_limit": 9500, "subsidized_max": 3500},
+      "year_2": {"total_limit": 10500, "subsidized_max": 4500},
+      "year_3_plus": {"total_limit": 12500, "subsidized_max": 5500},
+      "aggregate_total_limit": 57500,
+      "aggregate_subsidized_limit": 23000
+    },
+    "notes": "Subsidized portion requires financial_need = COA - SAI > 0, capped at subsidized_max for the student's year level. Unsubsidized portion fills the remainder up to total_limit regardless of need."
+  },
+
+  "cost_of_attendance_estimates": {
+    "description": "National average estimates used as defaults when the user does not specify a school. User-provided COA always overrides these.",
+    "community_college": 19000,
+    "public_4yr_in_state": 28000,
+    "public_4yr_out_of_state": 45000,
+    "private_4yr": 58000
+  }
+}

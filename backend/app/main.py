@@ -1,12 +1,12 @@
-"""FastAPI entrypoint for the community-support triage agent."""
+"""FastAPI entrypoint for the FAFSA Aid Navigator."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import triage
+from app.routes import aid_estimate
 
 app = FastAPI(
-    title="Community Support Triage Agent",
-    description="Conversational triage that matches people in crisis to local support services.",
+    title="FAFSA Aid Navigator",
+    description="AI-powered FAFSA aid estimation and eligibility guidance.",
     version="0.1.0",
 )
 
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(triage.router)
+app.include_router(aid_estimate.router)
 
 
 @app.get("/health")

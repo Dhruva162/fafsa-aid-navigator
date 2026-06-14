@@ -1,0 +1,112 @@
+{
+  "description": "Synthetic user scenarios for the Aid Navigator demo. No real user data is used, per hackathon guidelines.",
+  "personas": [
+    {
+      "id": "maria",
+      "name": "Maria",
+      "narrative": "First-generation college student, family of 4, parents' combined income ~$42,000/year. Starting her first year at a public 4-year university and worried she can't afford it.",
+      "profile": {
+        "dependency_status": "dependent",
+        "household_agi": 42000,
+        "family_size": 4,
+        "number_in_college": 1,
+        "student_income": 2000,
+        "student_assets": 0,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 1,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": false,
+        "school_type": "public_4yr_in_state"
+      }
+    },
+    {
+      "id": "devon",
+      "name": "Devon",
+      "narrative": "Sophomore at a public university, household AGI ~$85,000, family of 4. Wants to know if work-study or loans could help cover the gap his Pell Grant doesn't.",
+      "profile": {
+        "dependency_status": "dependent",
+        "household_agi": 85000,
+        "family_size": 4,
+        "number_in_college": 1,
+        "student_income": 4000,
+        "student_assets": 1500,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 2,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": false,
+        "school_type": "public_4yr_in_state"
+      }
+    },
+    {
+      "id": "priya",
+      "name": "Priya",
+      "narrative": "Independent student (24, supports herself), works part-time, attending community college, AGI ~$18,000/year.",
+      "profile": {
+        "dependency_status": "independent",
+        "household_agi": 18000,
+        "family_size": 1,
+        "number_in_college": 1,
+        "independent_assets": 500,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 3,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": false,
+        "school_type": "community_college"
+      }
+    },
+    {
+      "id": "the_alvarez_family",
+      "name": "The Alvarez family",
+      "narrative": "Two siblings in college at the same time, family of 5, household AGI ~$70,000. Want to understand how having two kids in school at once changes their aid.",
+      "profile": {
+        "dependency_status": "dependent",
+        "household_agi": 70000,
+        "family_size": 5,
+        "number_in_college": 2,
+        "student_income": 1000,
+        "student_assets": 0,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 1,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": false,
+        "school_type": "public_4yr_in_state"
+      }
+    },
+    {
+      "id": "james",
+      "name": "James",
+      "narrative": "Household receives SNAP benefits; family of 3, AGI ~$28,000. Unsure if that affects his aid eligibility -- demonstrates the Auto-Zero pathway.",
+      "profile": {
+        "dependency_status": "dependent",
+        "household_agi": 28000,
+        "family_size": 3,
+        "number_in_college": 1,
+        "student_income": 0,
+        "student_assets": 0,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 1,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": true,
+        "school_type": "public_4yr_in_state"
+      }
+    },
+    {
+      "id": "sofia",
+      "name": "Sofia",
+      "narrative": "Higher-income family (AGI ~$160,000, family of 4) -- demonstrates the 'may not qualify for Pell, but still gets the unsubsidized loan info' case so the tool doesn't feel useless to higher earners.",
+      "profile": {
+        "dependency_status": "dependent",
+        "household_agi": 160000,
+        "family_size": 4,
+        "number_in_college": 1,
+        "student_income": 5000,
+        "student_assets": 0,
+        "enrollment_intensity": "full_time",
+        "year_in_school": 1,
+        "citizenship_eligible": true,
+        "receives_means_tested_benefit": false,
+        "school_type": "public_4yr_in_state"
+      }
+    }
+  ]
+}
