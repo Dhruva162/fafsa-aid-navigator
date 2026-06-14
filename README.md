@@ -1,5 +1,7 @@
 # Community Support Triage Agent
 
+> Initialized on main.
+
 A conversational AI triage agent that helps people in crisis (food, housing, mental health) find the right local support service fast. Built for the USAII Global AI Hackathon 2026.
 
 ## What it does
