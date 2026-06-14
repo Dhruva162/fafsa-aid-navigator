@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Community Food Bank",
+    "category": "food",
+    "description": "Free groceries and hot meals, no appointment needed.",
+    "contact": "(555) 010-2000",
+    "hours": "Mon-Sat 9am-5pm",
+    "eligibility": "Open to all; bring ID if available."
+  },
+  {
+    "name": "Hope Shelter",
+    "category": "housing",
+    "description": "Emergency overnight shelter and case management.",
+    "contact": "(555) 010-3000",
+    "hours": "Intake daily 4pm-8pm",
+    "eligibility": "Adults 18+; families referred to partner site."
+  },
+  {
+    "name": "Wellness Counseling Center",
+    "category": "mental_health",
+    "description": "Sliding-scale counseling and same-day crisis support.",
+    "contact": "(555) 010-4000",
+    "hours": "Mon-Fri 8am-6pm",
+    "eligibility": "Sliding scale based on income; no insurance required."
+  },
+  {
+    "name": "Neighborhood Free Clinic",
+    "category": "medical",
+    "description": "Free primary care and prescription assistance.",
+    "contact": "(555) 010-5000",
+    "hours": "Tue & Thu 10am-4pm",
+    "eligibility": "Uninsured and underinsured residents."
+  }
+]
