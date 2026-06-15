@@ -8,6 +8,14 @@ const YEAR_OPTIONS = [
   { value: '5', label: '5th year or beyond' },
 ]
 
+const FIELD_LABELS = {
+  household_agi: 'Household Income (AGI)',
+  family_size: 'Family Size',
+  number_in_college: 'Number of Students in College',
+  year_in_school: 'Year in School',
+  dependency_status: 'Dependency Status',
+}
+
 const currency = (n) =>
   typeof n === 'number'
     ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -50,6 +58,7 @@ export default function App() {
 
     setConfirmed(false)
     setExtracted(data)
+    setResult(null)
 
   } catch (err) {
     alert("Could not analyze situation.")
@@ -70,8 +79,8 @@ export default function App() {
           body: JSON.stringify({
             dependency_status: form.dependencyStatus,
             household_agi: Number(form.agi),
-            family_size: Number(form.familySize),
-            number_in_college: Number(form.numInCollege),
+            family_size: form.familySize ? Number(form.familySize) : null,
+            number_in_college: form.numInCollege ? Number(form.numInCollege) : null,
 
             student_income: 0,
             student_assets: 0,
@@ -144,14 +153,20 @@ export default function App() {
     <p>Students In College: {extracted.number_in_college}</p>
     <p>Year In School: {extracted.year_in_school}</p>
     <p>Status: {extracted.dependency_status}</p>
-    <p>AI Confidence: {extracted.confidence || 'N/A'}</p>
+    <p>
+      {extracted.confidence === 'high'
+        ? '🟢 High Confidence'
+        : extracted.confidence === 'medium'
+        ? '🟡 Medium Confidence'
+        : '🔴 Low Confidence'}
+    </p>
 
     {extracted.missing_fields?.length > 0 && (
       <div style={styles.missingBox}>
         <strong>Missing Information</strong>
         <ul style={styles.missingList}>
           {extracted.missing_fields.map((field) => (
-            <li key={field}>{field}</li>
+            <li key={field}>{FIELD_LABELS[field] ?? field}</li>
           ))}
         </ul>
       </div>
@@ -160,26 +175,23 @@ export default function App() {
 <button
   type="button"
   style={styles.button}
-  disabled={extracted.missing_fields?.length > 0}
   onClick={() => {
     setForm({
-      agi: String(extracted.household_agi),
-      familySize: String(extracted.family_size),
-      numInCollege: String(extracted.number_in_college),
-      yearInSchool: String(extracted.year_in_school),
-      dependencyStatus: extracted.dependency_status,
+      agi: extracted.household_agi ?? '',
+      familySize: extracted.family_size ?? '',
+      numInCollege: extracted.number_in_college ?? '',
+      yearInSchool: extracted.year_in_school
+        ? String(extracted.year_in_school)
+        : '1',
+      dependencyStatus: extracted.dependency_status ?? 'dependent',
     })
 
+    setResult(null)
     setConfirmed(true)
 
-    setTimeout(() => {
-      calculateEstimate()
-    }, 100)
   }}
 >
-      {extracted.missing_fields?.length > 0
-        ? 'Please provide missing information'
-        : 'Confirm & Populate Form'}
+      Confirm & Populate Form
     </button>
 
     <div style={styles.demoBox}>
@@ -280,7 +292,28 @@ I am a first-year dependent student."
     <option value="independent">Independent Student</option>
   </select>
 </div>
-          <button type="submit" disabled={loading} style={styles.button}>
+{(
+                !form.agi ||
+                !form.familySize ||
+                !form.numInCollege ||
+                !form.dependencyStatus
+              ) && (
+                <div style={styles.infoBox}>
+                  Please complete all required fields before generating an estimate.
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  loading ||
+                  !form.agi ||
+                  !form.familySize ||
+                  !form.numInCollege ||
+                  !form.dependencyStatus
+                }
+                style={styles.button}
+              >
             {loading ? 'Calculating…' : 'Get my estimate'}
           </button>
         </form>
@@ -498,6 +531,15 @@ const styles = {
     whiteSpace: 'pre-wrap',
     margin: '0.5rem 0 0',
     color: '#EAF0F6',
+  },
+  infoBox: {
+    marginTop: '0.75rem',
+    padding: '0.85rem 1rem',
+    borderRadius: 10,
+    background: '#2A2F42',
+    color: '#E8F1FF',
+    border: '1px solid #4C7FE8',
+    fontSize: '0.95rem',
   },
   results: {
     marginTop: '1.75rem',
