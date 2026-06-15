@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.services.eligibility import StudentProfile, get_aid_estimate
+from app.services.ai_explainer import generate_explanation
 
 router = APIRouter(prefix="/api", tags=["aid"])
 
@@ -31,4 +32,12 @@ class StudentProfileRequest(BaseModel):
 @router.post("/aid-estimate")
 def estimate(profile: StudentProfileRequest):
     student = StudentProfile(**profile.model_dump())
-    return get_aid_estimate(student)
+
+    result = get_aid_estimate(student)
+
+    try:
+        result["ai_explanation"] = generate_explanation(result)
+    except Exception as e:
+        result["ai_explanation"] = f"AI explanation unavailable: {str(e)}"
+
+    return result
