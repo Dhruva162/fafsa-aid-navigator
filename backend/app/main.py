@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import aid_estimate
+from app.routes import intake
 
 app = FastAPI(
     title="FAFSA Aid Navigator",
@@ -18,7 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(aid_estimate.router)
-
+app.include_router(intake.router)
 
 @app.get("/health")
 def health() -> dict:
