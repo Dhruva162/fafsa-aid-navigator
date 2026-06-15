@@ -15,55 +15,92 @@ const currency = (n) =>
 
 export default function App() {
   const [form, setForm] = useState({
-    agi: '',
-    familySize: '',
-    numInCollege: '',
-    yearInSchool: '1',
-  })
+  agi: '',
+  familySize: '',
+  numInCollege: '',
+  yearInSchool: '1',
+  dependencyStatus: 'dependent',
+})
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [situation, setSituation] = useState('')
+  const [extracted, setExtracted] = useState(null)
+  const [confirmed, setConfirmed] = useState(false)
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
   }
+  async function analyzeSituation() {
+  try {
+    const resp = await fetch(
+      'http://127.0.0.1:8000/api/extract-profile',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          situation
+        })
+      }
+    )
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+    const data = await resp.json()
+
+    setConfirmed(false)
+    setExtracted(data)
+
+  } catch (err) {
+    alert("Could not analyze situation.")
+  }
+} 
+
+  async function calculateEstimate() {
     setError(null)
     setLoading(true)
     setResult(null)
+
     try {
-      const resp = await fetch('/api/aid-estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  dependency_status: "dependent",
-  household_agi: Number(form.agi),
-  family_size: Number(form.familySize),
-  number_in_college: Number(form.numInCollege),
+      const resp = await fetch(
+        'http://127.0.0.1:8000/api/aid-estimate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dependency_status: form.dependencyStatus,
+            household_agi: Number(form.agi),
+            family_size: Number(form.familySize),
+            number_in_college: Number(form.numInCollege),
 
-  student_income: 0,
-  student_assets: 0,
-  independent_assets: 0,
+            student_income: 0,
+            student_assets: 0,
+            independent_assets: 0,
 
-  enrollment_intensity: "full_time",
-  year_in_school: Number(form.yearInSchool),
+            enrollment_intensity: "full_time",
+            year_in_school: Number(form.yearInSchool),
 
-  citizenship_eligible: true,
-  receives_means_tested_benefit: false,
+            citizenship_eligible: true,
+            receives_means_tested_benefit: false,
 
-  school_type: "public_4yr_in_state",
-  custom_coa: null
-}),
-      })
-      if (!resp.ok) throw new Error(`Request failed (${resp.status})`)
+            school_type: "public_4yr_in_state",
+            custom_coa: null
+          })
+        }
+      )
+
       setResult(await resp.json())
+
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    calculateEstimate()
   }
 
   return (
@@ -77,6 +114,86 @@ export default function App() {
             Work Study, and federal loan eligibility.
           </p>
         </header>
+
+<div style={styles.card}>
+  <h3>Describe Your Situation</h3>
+
+  <textarea
+    rows="5"
+    value={situation}
+    onChange={(e) => setSituation(e.target.value)}
+    placeholder="My parents earn about $45,000. We are a family of 4. My sister is also in college. I'm a first-year student."
+    style={styles.input}
+  />
+
+  <button
+    type="button"
+    style={styles.button}
+    onClick={analyzeSituation}
+  >
+    Analyze My Situation
+  </button>
+</div>
+
+{extracted && !confirmed &&  (
+  <div style={styles.card}>
+    <h3>Here's What I Understood</h3>
+
+    <p>Income: ${extracted.household_agi}</p>
+    <p>Family Size: {extracted.family_size}</p>
+    <p>Students In College: {extracted.number_in_college}</p>
+    <p>Year In School: {extracted.year_in_school}</p>
+    <p>Status: {extracted.dependency_status}</p>
+    <p>AI Confidence: {extracted.confidence || 'N/A'}</p>
+
+    {extracted.missing_fields?.length > 0 && (
+      <div style={styles.missingBox}>
+        <strong>Missing Information</strong>
+        <ul style={styles.missingList}>
+          {extracted.missing_fields.map((field) => (
+            <li key={field}>{field}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+<button
+  type="button"
+  style={styles.button}
+  disabled={extracted.missing_fields?.length > 0}
+  onClick={() => {
+    setForm({
+      agi: String(extracted.household_agi),
+      familySize: String(extracted.family_size),
+      numInCollege: String(extracted.number_in_college),
+      yearInSchool: String(extracted.year_in_school),
+      dependencyStatus: extracted.dependency_status,
+    })
+
+    setConfirmed(true)
+
+    setTimeout(() => {
+      calculateEstimate()
+    }, 100)
+  }}
+>
+      {extracted.missing_fields?.length > 0
+        ? 'Please provide missing information'
+        : 'Confirm & Populate Form'}
+    </button>
+
+    <div style={styles.demoBox}>
+      <strong>Example:</strong>
+      <pre style={styles.demoText}>
+"My parents earn $45,000.
+We are a family of 4.
+My sister is also in college.
+I am a first-year dependent student."
+      </pre>
+    </div>
+  </div>
+)}
+
 
         <form onSubmit={handleSubmit} style={styles.card}>
           <div style={styles.field}>
@@ -149,7 +266,20 @@ export default function App() {
               ))}
             </select>
           </div>
+              <div style={styles.field}>
+  <label style={styles.label}>
+    Student Type
+  </label>
 
+  <select
+    value={form.dependencyStatus}
+    onChange={(e) => update('dependencyStatus', e.target.value)}
+    style={styles.input}
+  >
+    <option value="dependent">Dependent Student</option>
+    <option value="independent">Independent Student</option>
+  </select>
+</div>
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? 'Calculating…' : 'Get my estimate'}
           </button>
@@ -166,7 +296,18 @@ export default function App() {
             <h2 style={styles.resultsTitle}>Your estimate</h2>
             <div style={styles.resultsGrid}>
               <div style={styles.resultCard}>
+  <span style={styles.resultLabel}>Estimated SAI</span>
+  <span style={styles.resultValue}>
+    {Math.round(result.sai_estimate)}
+  </span>
+</div>
+             <div style={styles.resultCard}>
   <span style={styles.resultLabel}>Pell Grant</span>
+
+  <small>
+    Confidence: {result.results?.pell_grant?.confidence}
+  </small>
+
   <span style={styles.resultValue}>
     {result.results?.pell_grant?.estimated_award_range
       ? `$${result.results.pell_grant.estimated_award_range[0].toLocaleString()}`
@@ -176,6 +317,9 @@ export default function App() {
 
 <div style={styles.resultCard}>
   <span style={styles.resultLabel}>Work Study</span>
+  <small>
+  Confidence: {result.results?.federal_work_study?.confidence}
+</small>
   <span style={styles.resultValue}>
     {result.results?.federal_work_study?.estimated_award_range
       ? `$${result.results.federal_work_study.estimated_award_range[0].toLocaleString()} - $${result.results.federal_work_study.estimated_award_range[1].toLocaleString()}`
@@ -185,6 +329,9 @@ export default function App() {
 
 <div style={styles.resultCard}>
   <span style={styles.resultLabel}>Subsidized Loan</span>
+  <small>
+  Confidence: {result.results?.subsidized_loan?.confidence}
+</small>
   <span style={styles.resultValue}>
     {result.results?.subsidized_loan?.estimated_award_range
       ? `$${result.results.subsidized_loan.estimated_award_range[0].toLocaleString()}`
@@ -192,7 +339,45 @@ export default function App() {
   </span>
 </div>
             </div>
-            {result.note && <p style={styles.note}>{result.note}</p>}
+            <div style={styles.warningBox}>
+  <strong>Important:</strong>
+  This tool provides estimates only.
+  Final eligibility is determined by FAFSA
+  and your school's financial aid office.
+</div>
+           {result.ai_explanation && (
+  <div style={styles.aiCard}>
+    <h3>AI Financial Aid Advisor</h3>
+    <div style={{ whiteSpace: 'pre-wrap' }}>
+  {result.ai_explanation}
+</div>
+  </div>
+)}
+<div style={styles.aiCard}>
+  <h3>Recommended Next Steps</h3>
+
+  <ol>
+    {result.next_steps?.map((step, idx) => (
+      <li key={idx}>{step}</li>
+    ))}
+  </ol>
+</div>
+
+<div style={styles.warningBox}>
+  <h3>Human Review Required</h3>
+
+  <p>{result.human_referral}</p>
+</div>
+
+<div style={styles.aiCard}>
+  <h3>How Your SAI Was Estimated</h3>
+
+  <ul>
+    {result.sai_explanation?.map((item, idx) => (
+      <li key={idx}>{item}</li>
+    ))}
+  </ul>
+</div>
           </section>
         )}
       </main>
@@ -290,6 +475,30 @@ const styles = {
     padding: '0.85rem 1rem',
     fontSize: '0.9rem',
   },
+  missingBox: {
+    background: '#2E2E3F',
+    border: '1px solid #4A5B7C',
+    borderRadius: 10,
+    padding: '0.85rem 1rem',
+  },
+  missingList: {
+    margin: '0.5rem 0 0',
+    paddingLeft: '1rem',
+  },
+  demoBox: {
+    background: '#111B2F',
+    border: '1px dashed #4C8BF5',
+    borderRadius: 10,
+    padding: '0.85rem 1rem',
+    marginTop: '1rem',
+    color: '#C7D7F5',
+    fontSize: '0.95rem',
+  },
+  demoText: {
+    whiteSpace: 'pre-wrap',
+    margin: '0.5rem 0 0',
+    color: '#EAF0F6',
+  },
   results: {
     marginTop: '1.75rem',
   },
@@ -300,7 +509,7 @@ const styles = {
   },
   resultsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '0.75rem',
   },
   resultCard: {
@@ -325,6 +534,22 @@ const styles = {
     fontWeight: 700,
     color: '#7FE0A5',
   },
+  aiCard: {
+  marginTop: '1rem',
+  background: '#16243B',
+  border: '1px solid #243758',
+  borderRadius: 10,
+  padding: '1rem',
+  lineHeight: 1.6,
+},
+warningBox: {
+  marginTop: '1rem',
+  background: '#332500',
+  border: '1px solid #8B6A00',
+  padding: '1rem',
+  borderRadius: 8,
+  color: '#FFE7A3',
+},
   note: {
     marginTop: '1rem',
     color: '#9FB2C7',
