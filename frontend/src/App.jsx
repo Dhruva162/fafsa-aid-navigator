@@ -16,6 +16,30 @@ const FIELD_LABELS = {
   dependency_status: 'Dependency Status',
 }
 
+const normalizeYear = (value) => {
+  if (!value) return '1';
+
+  const text = String(value).toLowerCase();
+
+  if (text.includes('1')) return '1';
+  if (text.includes('2')) return '2';
+  if (text.includes('3')) return '3';
+  if (text.includes('4')) return '4';
+  if (text.includes('5')) return '5';
+
+  return '1';
+};
+
+const normalizeDependencyStatus = (value) => {
+  if (!value) return 'dependent';
+
+  const text = String(value).toLowerCase();
+
+  return text.includes('independent')
+    ? 'independent'
+    : 'dependent';
+};
+
 const currency = (n) =>
   typeof n === 'number'
     ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -37,6 +61,7 @@ export default function App() {
   const [confirmed, setConfirmed] = useState(false)
   const [followupAnswer, setFollowupAnswer] = useState('')
   const [followupLoading, setFollowupLoading] = useState(false)
+  const [showManualForm, setShowManualForm] = useState(false)
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -58,8 +83,16 @@ export default function App() {
 
     const data = await resp.json()
 
+    if (data?.error) {
+      alert(
+        "We couldn't identify FAFSA-related information.\n\nPlease describe:\n• Household income\n• Family size\n• Students in college\n• Dependency status"
+      )
+      return
+    }
+
     setConfirmed(false)
     setExtracted(data)
+    setShowManualForm(true)
     setResult(null)
 
   } catch (err) {
@@ -86,6 +119,7 @@ async function submitFollowup() {
     )
 
     const data = await resp.json()
+    console.log("FOLLOWUP RESPONSE:", data)
 
     setExtracted(data)
     setFollowupAnswer('')
@@ -103,32 +137,61 @@ async function submitFollowup() {
     setResult(null)
 
     try {
+      const yearMap = {
+        "1st year": 1,
+        "2nd year": 2,
+        "3rd year": 3,
+        "4th year": 4,
+        "5th year or beyond": 5,
+      };
+
+      const payload = {
+        dependency_status: form.dependencyStatus,
+        household_agi: Number(form.agi),
+        family_size: Number(form.familySize),
+        number_in_college: Number(form.numInCollege),
+
+        student_income: 0,
+        student_assets: 0,
+        independent_assets: 0,
+
+        enrollment_intensity: "full_time",
+
+        year_in_school: parseInt(
+          form.yearInSchool,
+          10
+        ),
+
+        citizenship_eligible: true,
+        receives_means_tested_benefit: false,
+
+        school_type: "public_4yr_in_state",
+        custom_coa: null,
+      };
+
+      console.log("PAYLOAD:", payload);
       const resp = await fetch(
         'http://127.0.0.1:8000/api/aid-estimate',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dependency_status: form.dependencyStatus,
-            household_agi: Number(form.agi),
-            family_size: form.familySize ? Number(form.familySize) : null,
-            number_in_college: form.numInCollege ? Number(form.numInCollege) : null,
-
-            student_income: 0,
-            student_assets: 0,
-            independent_assets: 0,
-
-            enrollment_intensity: "full_time",
-            year_in_school: Number(form.yearInSchool),
-
-            citizenship_eligible: true,
-            receives_means_tested_benefit: false,
-
-            school_type: "public_4yr_in_state",
-            custom_coa: null
-          })
+          body: JSON.stringify(payload),
         }
       )
+
+      if (!resp.ok) {
+        const err = await resp.json();
+
+        console.error(err);
+
+        setError(
+          err.detail?.[0]?.msg ||
+          "Unable to generate estimate."
+        );
+
+        setLoading(false);
+        return;
+      }
 
       setResult(await resp.json())
 
@@ -157,7 +220,15 @@ async function submitFollowup() {
         </header>
 
 <div style={styles.card}>
-  <h3>Describe Your Situation</h3>
+  <h3>AI-Assisted Intake (Recommended)</h3>
+
+  <p style={styles.note}>
+    Describe your situation in plain English. The AI will extract FAFSA information, identify missing details, and guide you through the process before generating an estimate.
+  </p>
+
+  <p style={styles.note}>
+    AI is used only for information extraction and guidance. Financial aid calculations are performed by a deterministic eligibility engine.
+  </p>
 
   <textarea
     rows="5"
@@ -178,7 +249,7 @@ async function submitFollowup() {
 
 {extracted && !confirmed &&  (
   <div style={styles.card}>
-    <h3>Here's What I Understood</h3>
+    <h3>Step 1: Review Extracted Information</h3>
 
     <p>Income: ${extracted.household_agi}</p>
     <p>Family Size: {extracted.family_size}</p>
@@ -193,17 +264,25 @@ async function submitFollowup() {
         : '🔴 Low Confidence'}
     </p>
 
+    {extracted.confidence === 'low' && (
+      <p style={styles.note}>
+        Please provide additional information for a more reliable estimate.
+      </p>
+    )}
+
+    {extracted.missing_fields?.length > 0 && (
+      <div style={styles.missingBox}>
+        <strong>⚠ Missing {extracted.missing_fields.length} Required Fields</strong>
+        <ul style={styles.missingList}>
+          {extracted.missing_fields.map((field) => (
+            <li key={field}>{field.split('_').join(' ')}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
     {extracted.missing_fields?.length > 0 && (
       <>
-        <div style={styles.missingBox}>
-          <strong>Missing Information</strong>
-          <ul style={styles.missingList}>
-            {extracted.missing_fields.map((field) => (
-              <li key={field}>{FIELD_LABELS[field] ?? field}</li>
-            ))}
-          </ul>
-        </div>
-
         <textarea
           rows="4"
           value={followupAnswer}
@@ -228,42 +307,51 @@ async function submitFollowup() {
       </>
     )}
 
-<button
-  type="button"
-  style={styles.button}
-  onClick={() => {
-    setForm({
-      agi: extracted.household_agi ?? '',
-      familySize: extracted.family_size ?? '',
-      numInCollege: extracted.number_in_college ?? '',
-      yearInSchool: extracted.year_in_school
-        ? String(extracted.year_in_school)
-        : '1',
-      dependencyStatus: extracted.dependency_status ?? 'dependent',
-    })
+    <button
+      type="button"
+      style={styles.button}
+      onClick={() => {
+        setForm({
+          agi: extracted.household_agi ?? '',
+          familySize: extracted.family_size ?? '',
+          numInCollege: extracted.number_in_college ?? '',
 
-    setResult(null)
-    setConfirmed(true)
+          yearInSchool: normalizeYear(
+            extracted.year_in_school
+          ),
 
-  }}
->
-      Confirm & Populate Form
+          dependencyStatus: normalizeDependencyStatus(
+            extracted.dependency_status
+          ),
+        })
+
+        setResult(null)
+        setConfirmed(true)
+
+      }}
+    >
+      Confirm & Continue
     </button>
-
-    <div style={styles.demoBox}>
-      <strong>Example:</strong>
-      <pre style={styles.demoText}>
-"My parents earn $45,000.
-We are a family of 4.
-My sister is also in college.
-I am a first-year dependent student."
-      </pre>
-    </div>
   </div>
 )}
 
 
+        {!showManualForm && !extracted && (
+          <div style={styles.card}>
+            <div style={styles.infoBox}>Prefer traditional form entry?</div>
+            <button
+              type="button"
+              style={styles.button}
+              onClick={() => setShowManualForm(true)}
+            >
+              Enter Information Manually
+            </button>
+          </div>
+        )}
+
+        {showManualForm && (
         <form onSubmit={handleSubmit} style={styles.card}>
+          <h3>Step 2: Confirm or Edit Information</h3>
           <div style={styles.field}>
             <label style={styles.label} htmlFor="agi">
               Household Adjusted Gross Income (AGI)
@@ -370,9 +458,10 @@ I am a first-year dependent student."
                 }
                 style={styles.button}
               >
-            {loading ? 'Calculating…' : 'Get my estimate'}
+            {loading ? 'Calculating…' : 'Generate Aid Estimate'}
           </button>
         </form>
+        )}
 
         {error && (
           <div style={styles.errorBox}>
@@ -383,11 +472,18 @@ I am a first-year dependent student."
         {result && (
           <section style={styles.results}>
             <h2 style={styles.resultsTitle}>Your estimate</h2>
+
+            <p style={styles.note}>
+              AI is used for information extraction and explanations. All financial aid calculations are performed using a deterministic eligibility engine.
+            </p>
+
             <div style={styles.resultsGrid}>
               <div style={styles.resultCard}>
   <span style={styles.resultLabel}>Estimated SAI</span>
   <span style={styles.resultValue}>
-    {Math.round(result.sai_estimate)}
+    {Number.isFinite(result?.sai_estimate)
+      ? Math.round(result.sai_estimate)
+      : "Unavailable"}
   </span>
 </div>
              <div style={styles.resultCard}>
@@ -400,7 +496,7 @@ I am a first-year dependent student."
   <span style={styles.resultValue}>
     {result.results?.pell_grant?.estimated_award_range
       ? `$${result.results.pell_grant.estimated_award_range[0].toLocaleString()}`
-      : 'N/A'}
+      : 'Unavailable'}
   </span>
 </div>
 
@@ -412,7 +508,7 @@ I am a first-year dependent student."
   <span style={styles.resultValue}>
     {result.results?.federal_work_study?.estimated_award_range
       ? `$${result.results.federal_work_study.estimated_award_range[0].toLocaleString()} - $${result.results.federal_work_study.estimated_award_range[1].toLocaleString()}`
-      : 'N/A'}
+      : 'Unavailable'}
   </span>
 </div>
 
@@ -424,7 +520,7 @@ I am a first-year dependent student."
   <span style={styles.resultValue}>
     {result.results?.subsidized_loan?.estimated_award_range
       ? `$${result.results.subsidized_loan.estimated_award_range[0].toLocaleString()}`
-      : 'N/A'}
+      : 'Unavailable'}
   </span>
 </div>
             </div>
