@@ -35,6 +35,8 @@ export default function App() {
   const [situation, setSituation] = useState('')
   const [extracted, setExtracted] = useState(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [followupAnswer, setFollowupAnswer] = useState('')
+  const [followupLoading, setFollowupLoading] = useState(false)
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -63,7 +65,37 @@ export default function App() {
   } catch (err) {
     alert("Could not analyze situation.")
   }
-} 
+}
+
+async function submitFollowup() {
+  try {
+    setFollowupLoading(true)
+
+    const resp = await fetch(
+      'http://127.0.0.1:8000/api/followup',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          current_profile: extracted,
+          answer: followupAnswer
+        })
+      }
+    )
+
+    const data = await resp.json()
+
+    setExtracted(data)
+    setFollowupAnswer('')
+
+  } catch (err) {
+    alert('Could not update profile.')
+  } finally {
+    setFollowupLoading(false)
+  }
+}
 
   async function calculateEstimate() {
     setError(null)
@@ -162,14 +194,38 @@ export default function App() {
     </p>
 
     {extracted.missing_fields?.length > 0 && (
-      <div style={styles.missingBox}>
-        <strong>Missing Information</strong>
-        <ul style={styles.missingList}>
-          {extracted.missing_fields.map((field) => (
-            <li key={field}>{FIELD_LABELS[field] ?? field}</li>
-          ))}
-        </ul>
-      </div>
+      <>
+        <div style={styles.missingBox}>
+          <strong>Missing Information</strong>
+          <ul style={styles.missingList}>
+            {extracted.missing_fields.map((field) => (
+              <li key={field}>{FIELD_LABELS[field] ?? field}</li>
+            ))}
+          </ul>
+        </div>
+
+        <textarea
+          rows="4"
+          value={followupAnswer}
+          onChange={(e) => setFollowupAnswer(e.target.value)}
+          placeholder="We are a family of 4. Two people are in college. I am a dependent student."
+          style={{
+            ...styles.input,
+            marginTop: '1rem'
+          }}
+        />
+
+        <button
+          type="button"
+          style={styles.button}
+          onClick={submitFollowup}
+          disabled={followupLoading || !followupAnswer.trim()}
+        >
+          {followupLoading
+            ? 'Updating...'
+            : 'Update Profile'}
+        </button>
+      </>
     )}
 
 <button
