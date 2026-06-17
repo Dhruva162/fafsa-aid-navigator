@@ -9,6 +9,26 @@ load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
+def normalize_year_string(year):
+    if year is None:
+        return None
+
+    text = str(year).strip().lower()
+
+    if text in {"1", "1st year", "first year"} or "first" in text or "1st" in text:
+        return "1st year"
+    if text in {"2", "2nd year", "second year"} or "second" in text or "2nd" in text:
+        return "2nd year"
+    if text in {"3", "3rd year", "third year"} or "third" in text or "3rd" in text:
+        return "3rd year"
+    if text in {"4", "4th year", "fourth year"} or "fourth" in text or "4th" in text:
+        return "4th year"
+    if text in {"5", "5th year", "fifth year"} or "fifth" in text or "5th" in text:
+        return "5th year"
+
+    return year
+
+
 def extract_profile(text: str):
     prompt = f"""
 Extract FAFSA information from this student description.
@@ -19,11 +39,18 @@ Return ONLY valid JSON.
   "household_agi": number|null,
   "family_size": number|null,
   "number_in_college": number|null,
-  "year_in_school": number|null,
+  "year_in_school": "1st year"|"2nd year"|"3rd year"|"4th year"|"5th year"|null,
   "dependency_status": "dependent"|"independent"|null,
   "missing_fields": [],
   "confidence": "high"|"medium"|"low"
-}}
+}
+
+Normalize year_in_school to one of:
+1st year
+2nd year
+3rd year
+4th year
+5th year
 
 If information is not provided:
 - Set the field to null
@@ -53,6 +80,7 @@ Student description:
     content = content.strip()
 
     data = json.loads(content)
+    data["year_in_school"] = normalize_year_string(data.get("year_in_school"))
 
     missing_count = len(data.get("missing_fields", []))
 
