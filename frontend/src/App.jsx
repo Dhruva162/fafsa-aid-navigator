@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const YEAR_OPTIONS = [
   { value: '1', label: '1st year' },
   { value: '2', label: '2nd year' },
@@ -69,7 +71,7 @@ export default function App() {
   async function analyzeSituation() {
   try {
     const resp = await fetch(
-      'http://127.0.0.1:8000/api/extract-profile',
+      `${API_URL}/api/extract-profile`,
       {
         method: 'POST',
         headers: {
@@ -105,7 +107,7 @@ async function submitFollowup() {
     setFollowupLoading(true)
 
     const resp = await fetch(
-      'http://127.0.0.1:8000/api/followup',
+      `${API_URL}/api/followup`,
       {
         method: 'POST',
         headers: {
@@ -171,7 +173,7 @@ async function submitFollowup() {
 
       console.log("PAYLOAD:", payload);
       const resp = await fetch(
-        'http://127.0.0.1:8000/api/aid-estimate',
+        `${API_URL}/api/aid-estimate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
